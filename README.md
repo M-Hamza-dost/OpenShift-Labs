@@ -84,6 +84,7 @@ This lab enhanced my understanding of managing OpenShift clusters.
 
 ### **Conclusion for Lab 2**
 This lab helped in deploying, managing, and exposing applications in OpenShift. It provided hands-on experience with scaling, templates, and routing.
+
 ---
 <br>
 <br>
@@ -350,9 +351,9 @@ oc apply statefulset.yml
 
 ---
 
-## Conclusion
-
+## **Conclusion**
 This lab covered managing sensitive data with Secrets, storing configurations with ConfigMaps, provisioning persistent storage with PVs and PVCs, defining StorageClasses, and deploying StatefulSets for stateful applications.
+
 ---
 <br>
 <br>
@@ -492,9 +493,9 @@ oc apply -f autoscaler.yaml
 ```
 ---
 
-## Conclusion for Lab 4
-
+## **Conclusion for Lab 4**
 This lab improved my understanding of making applications reliable and scalable by using health probes, setting resource limits, and configuring autoscaling.
+
 ---
 <br>
 <br>
@@ -586,8 +587,231 @@ oc apply -f imagestream.yaml
 
 ## Conclusion for Lab 5
 This lab improved my understanding of application updates, rollbacks, and automation in OpenShift.
+---
+<br>
+<br>
 
+# Lab 6: Troubleshooting in OpenShift
 
+## Lab Objectives
+- Diagnose and troubleshoot common container and pod issues.
+- Monitor cluster events and set up alerts.
+- Use OpenShift documentation to resolve problems.
+
+## Tasks Completed
+
+1. **Simulate and Troubleshoot Pod Failures**
+   - **CrashLoopBackOff Simulation**  
+   **Description:** Created a pod with a faulty command to simulate a CrashLoopBackOff error.  
+   **Steps:**
+   
+   Applied the following YAML to create a faulty pod:
+   ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: crash-loop-pod
+   spec:
+     containers:
+     - name: crash-loop-container
+       image: nginx
+       command: ["/bin/sh", "-c"]
+       args: ["exit 1"]
+   ```
+
+   **Commands Used:**
+   ```bash
+   oc apply -f crash-loop-pod.yaml   # Create the pod  
+   oc get pods                      # Check pod status  
+   oc describe pod crash-loop-pod   # Get details of the error  
+   oc logs crash-loop-pod           # View pod logs  
+   ```
+
+   **Key Learnings:** How to identify and troubleshoot CrashLoopBackOff errors using `oc describe` and `oc logs`.
+
+   - **ImagePullBackOff Simulation**  
+   **Description:** Simulated an ImagePullBackOff by using a non-existent image.  
+   **Steps:**
+   
+   Created a pod using this YAML:
+   ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     name: image-pull-pod
+   spec:
+     containers:
+     - name: image-pull-container
+       image: non-existent-image:latest
+   ```
+
+   **Commands Used:**
+   ```bash
+   oc apply -f image-pull-pod.yaml   # Create the pod  
+   oc describe pod image-pull-pod    # Check why the image pull failed  
+   oc get events --sort-by='.metadata.creationTimestamp'  # View related events  
+   ```
+
+   **Key Learnings:** Learned how to diagnose ImagePullBackOff errors and understand event logs.
+
+2. **Monitor Cluster Events and Set Up Alerts**
+   - **View Cluster Events**  
+   **Description:** Monitored recent cluster events to identify potential issues.  
+   **Command Used:**
+   ```bash
+   oc get events --sort-by='.metadata.creationTimestamp'
+   ```
+
+   **Key Learnings:** Monitoring events helps in diagnosing problems with pods and other resources.
+
+   - **Set Up a Custom Alert**  
+   **Description:** Created a Prometheus alert rule to monitor high CPU usage and trigger an alert if it exceeds 80% for 5 minutes.  
+   **YAML File:**
+   ```yaml
+   apiVersion: monitoring.coreos.com/v1
+   kind: PrometheusRule
+   metadata:
+     name: custom-alert-rule
+   spec:
+     groups:
+     - name: custom-alerts
+       rules:
+       - alert: HighCpuUsage
+         expr: sum(rate(container_cpu_usage_seconds_total{job="kubelet"}[5m])) by (namespace) > 0.8
+         for: 5m
+         labels:
+           severity: critical
+   ```
+
+   **Command Used:**
+   ```bash
+   oc apply -f custom-alert-rule.yaml
+   ```
+
+   **Key Learnings:** Prometheus alerts can help detect issues early and maintain cluster health.
+
+3. **Resolve Network Policy Issues**  
+   **Description:** Simulated a network policy blocking all traffic and used OpenShift documentation to resolve the issue.  
+   **YAML File:**
+   ```yaml
+   apiVersion: networking.k8s.io/v1
+   kind: NetworkPolicy
+   metadata:
+     name: deny-all-policy
+   spec:
+     podSelector: {}
+     policyTypes:
+     - Ingress
+     - Egress
+   ```
+
+   **Commands Used:**
+   ```bash
+   oc apply -f deny-all-policy.yaml   # Create the network policy  
+   oc describe networkpolicy deny-all-policy  # Identify the traffic block  
+   ```
+
+   **Key Learnings:** Network policies control traffic between pods. Using OpenShift documentation helps understand and fix misconfigurations.
+   ---
+   
+## **Conclusion for Lab 6**
+This lab provided hands-on experience in diagnosing and resolving common pod issues, monitoring events, and setting up alerts. It also reinforced how to use OpenShift documentation effectively for troubleshooting.
+
+---
+<br>
+<br>
+
+# Lab 7: Monitoring and Analyzing Logs in OpenShift
+
+## Lab Objectives
+- Set up and interpret monitoring tools in OpenShift.
+- Analyze logs for pods and containers.
+- Create alerts for common warning signs.
+
+## Tasks Completed
+
+1. **Configure and Use Monitoring Tools**
+   a. Access the OpenShift Web Console  
+   **Description:** Logged in to the OpenShift web console and navigated to the "Monitoring" section to explore built-in dashboards.  
+   **Key Learnings:** Observed cluster metrics such as CPU usage, memory usage, and network traffic using visual dashboards.
+
+   b. Set Up Alerts for High CPU Usage  
+   **Description:** Created an alert to monitor high CPU usage using Prometheus rules.  
+   **YAML File:**
+   ```yaml
+   apiVersion: monitoring.coreos.com/v1
+   kind: PrometheusRule
+   metadata:
+     name: high-cpu-alert
+   spec:
+     groups:
+       - name: high-cpu-alerts
+         rules:
+           - alert: HighCPUUsage
+             expr: sum(rate(container_cpu_usage_seconds_total[5m])) by (namespace) / sum(container_spec_cpu_quota) * 100 > 90
+             for: 5m
+             labels:
+               severity: warning
+             annotations:
+               summary: "High CPU Usage Detected"
+               description: "CPU usage in namespace {{ $labels.namespace }} is above 90% for more than 5 minutes."
+   ```
+
+   **Commands Used:**
+   ```bash
+   oc apply -f high-cpu-alert.yaml   # Create the CPU usage alert  
+   ```
+   **Key Learnings:** Learned how to monitor CPU usage and create alerts using Prometheus rules.
+
+2. **Fetch and Analyze Logs for Pods and Containers**
+   a. View Logs for a Pod  
+   **Description:** Used oc logs to fetch logs from a specific pod.  
+   **Command Used:**
+   ```bash
+   oc logs my-example-pod  
+   ```
+   **Key Learnings:** Reading pod logs helps diagnose issues like failed requests and error patterns.
+
+   b. View Logs for a Specific Container  
+   **Description:** For pods with multiple containers, used -c to specify the container name and view its logs.  
+   **Command Used:**
+   ```bash
+   oc logs my-example-pod -c my-container  
+   ```
+   **Key Learnings:** Analyzing logs at the container level helps identify issues in multi-container pods.
+
+3. **Set Up Alerts for High Memory Usage**  
+   **Description:** Configured an alert for high memory usage to ensure better resource monitoring.  
+   **YAML File:**
+   ```yaml
+   apiVersion: monitoring.coreos.com/v1
+   kind: PrometheusRule
+   metadata:
+     name: high-memory-alert
+   spec:
+     groups:
+       - name: high-memory-alerts
+         rules:
+           - alert: HighMemoryUsage
+             expr: sum(container_memory_usage_bytes) by (namespace) / sum(container_spec_memory_limit_bytes) * 100 > 90
+             for: 5m
+             labels:
+               severity: warning
+             annotations:
+               summary: "High Memory Usage Detected"
+               description: "Memory usage in namespace {{ $labels.namespace }} is above 90% for more than 5 minutes."
+   ```
+
+   **Command Used:**
+   ```bash
+   oc apply -f high-memory-alert.yaml   # Create the memory usage alert  
+   ```
+   **Key Learnings:** Alerts for memory usage help prevent resource exhaustion and improve application performance.
+
+## **Conclusion for Lab 7**
+This lab improved my understanding of monitoring cluster metrics, analyzing logs, and creating alerts. These skills help in maintaining a healthy OpenShift cluster and diagnosing issues quickly.
+
+---
 
 
 
