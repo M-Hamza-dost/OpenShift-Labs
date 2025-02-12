@@ -812,7 +812,188 @@ This lab provided hands-on experience in diagnosing and resolving common pod iss
 This lab improved my understanding of monitoring cluster metrics, analyzing logs, and creating alerts. These skills help in maintaining a healthy OpenShift cluster and diagnosing issues quickly.
 
 ---
+<br>
+<br>
 
+# Lab 8: Managing Networking in OpenShift
+
+## Lab Objectives
+- Understand internal and external networking in OpenShift.
+- Configure and manage services and routes.
+- Secure applications with TLS and implement network policies.
+
+## Tasks Completed
+
+1. **Create and Configure Different Types of Services**
+
+   a. **Create a ClusterIP Service**  
+   **Description:** Created a ClusterIP service to allow internal communication within the cluster.
+
+   **YAML File:**
+   ```yaml
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: clusterip-service
+   spec:
+     selector:
+       app: nginx
+     ports:
+       - protocol: TCP
+         port: 80
+         targetPort: 8080
+   ```
+
+   **Command Used:**
+   ```bash
+   oc apply -f clusterip-service.yaml
+   ```
+
+   **Key Learnings:** Learned how to create a service for internal communication.
+
+   b. **Create a NodePort Service**  
+   **Description:** Exposed the application on a static port for external access using a NodePort service.
+
+   **YAML File:**
+   ```yaml
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: nodeport-service
+   spec:
+     selector:
+       app: nginx
+     ports:
+       - protocol: TCP
+         port: 80
+         targetPort: 8080
+         type: NodePort
+   ```
+
+   **Command Used:**
+   ```bash
+   oc apply -f nodeport-service.yaml
+   ```
+
+   **Key Learnings:** NodePort services help expose applications externally.
+
+   c. **Create a LoadBalancer Service**  
+   **Description:** Configured a LoadBalancer service to distribute traffic to the application and provide external access.
+
+   **YAML File:**
+   ```yaml
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: lb-service
+   spec:
+     selector:
+       app: nginx
+     ports:
+       - protocol: TCP
+         port: 80
+         targetPort: 8080
+         type: LoadBalancer
+   ```
+
+   **Command Used:**
+   ```bash
+   oc apply -f lb-service.yaml
+   ```
+
+   **Key Learnings:** LoadBalancer services distribute traffic and offer built-in load balancing.
+
+
+## 2. Expose a Service Using a Route
+
+### a. Create an External Route
+**Description:** Created a route to expose the NodePort service to the outside world.
+
+**YAML File:**
+```yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: external-route
+spec:
+  to:
+    kind: Service
+    name: nodeport-service
+  port:
+    targetPort: 8080
+```
+
+**Command Used:**
+```bash
+oc apply -f external-route.yaml
+```
+
+**Key Learnings:** Routes make services accessible to external users.
+
+## 3. Secure a Route with TLS and Apply Network Policies
+
+### a. Secure a Route with TLS
+**Description:** Configured a secure route with TLS to encrypt traffic.
+
+**YAML File:**
+```yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: secure-route
+spec:
+  to:
+    kind: Service
+    name: nodeport-service
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+```
+
+**Command Used:**
+```bash
+oc apply -f secure-route.yaml
+```
+
+**Key Learnings:** TLS improves security by encrypting external traffic.
+
+### b. Create a Basic Network Policy
+**Description:** Created a network policy to control traffic flow between pods.
+
+**YAML File:**
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: basic-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: nginx
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              role: frontend
+      ports:
+        - protocol: TCP
+          port: 80
+```
+
+**Command Used:**
+```bash
+oc apply -f basic-policy.yaml
+```
+
+**Key Learnings:** Network policies enhance security by controlling pod communication.
+
+## Conclusion for Lab 8
+This lab improved my understanding of managing networking in OpenShift. I learned how to configure services, expose applications externally using routes, secure routes with TLS, and apply network policies for better security.
+
+---
+<br>
+<br>
 
 
 
